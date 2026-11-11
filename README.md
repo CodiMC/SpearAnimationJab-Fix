@@ -2,7 +2,7 @@
 Stops the spear lunge/jab animation from carrying over to a non-spear item when you do swap hotbar slots mid-swing [(MC-310695)](https://bugs.mojang.com/browse/MC/issues/MC-310695).
 
 Requirements:
-- Fabric-loader-0.20.1+
+- Fabric-loader-0.19.5+
 - Fabric Language Kotlin
 
 Before the fix:
