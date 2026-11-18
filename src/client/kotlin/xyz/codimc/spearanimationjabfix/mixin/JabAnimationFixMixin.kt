@@ -1,6 +1,5 @@
 package xyz.codimc.spearanimationjabfix.mixin
 
-import net.minecraft.tags.ItemTags
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.SwingAnimationType
@@ -15,7 +14,11 @@ import xyz.codimc.spearanimationjabfix.swingDuration
  * held item changes, so swapping off a spear mid-lunge plays the stab on the new item.
  *
  * Each tick, just before the swing state advances, if a stab swing is playing but the
- * swinging hand no longer holds a spear, swap in the animation of the item actually held.
+ * swinging hand's item no longer uses a stab animation, swap in the animation of the item
+ * actually held.
+ *
+ * Client-side only: this class patches LivingEntity, which the integrated server also runs,
+ * so every path on a non-client level returns before anything is read or written.
  */
 @Mixin(LivingEntity::class)
 abstract class JabAnimationFixMixin {
@@ -30,7 +33,10 @@ abstract class JabAnimationFixMixin {
     )
     private fun spearanimationjabfixDropStaleStab(ci: CallbackInfo) {
         val self = this as Any as LivingEntity
+
+        // Only players, and only on the logical client (never the integrated server).
         if (self !is Player) return
+        if (!self.level().isClientSide) return
 
         val state = (self as LivingEntitySwingStateAccessor).spearanimationjabfixGetSwingState()
         val accessor = state as SwingStateCurrentSwingAccessor
@@ -39,9 +45,9 @@ abstract class JabAnimationFixMixin {
         if (current.animation().type() != SwingAnimationType.STAB) return
 
         val held = self.getItemInHand(current.hand())
-        if (held.`is`(ItemTags.SPEARS)) return // still holding the spear, stab is correct
-
         val replacement = held.getAttackAnimation()
+        if (replacement.type() == SwingAnimationType.STAB) return // held item legitimately stabs
+
         accessor.spearanimationjabfixSetCurrentSwing(
             LivingEntity.SwingDescription(
                 current.hand(),
